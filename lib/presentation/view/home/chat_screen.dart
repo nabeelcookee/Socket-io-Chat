@@ -9,8 +9,8 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  TextEditingController _messageController = TextEditingController();
-  List<String> _messages = [];
+  final TextEditingController _messageController = TextEditingController();
+  final List<String> _messages = [];
   late IO.Socket socket;
   late StreamController<List<String>> _messagesController;
 
@@ -20,9 +20,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _messagesController = StreamController<List<String>>.broadcast();
 
-    socket = IO.io('http://178.33.34.156:3500', <String, dynamic>{
+    socket = IO.io('wss://ws.postman-echo.com/socketio', <String, dynamic>{
       'transports': ['websocket'],
-      'autoConnect': false,
+      'autoConnect': true,
     });
 
     socket.on('connect', (_) {
@@ -32,7 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
     socket.on('message', (data) {
       print('Received message: $data');
       _messages.add(data);
-      _messagesController.add(_messages); // Notify the StreamBuilder of the updated messages
+      _messagesController.add(_messages);
     });
 
     socket.on('disconnect', (_) {
@@ -57,7 +57,8 @@ class _ChatScreenState extends State<ChatScreen> {
     String message = _messageController.text.trim();
     print('Sending message: $message'); // Add this line
     _messages.add(message);
-    _messagesController.add(_messages); // Notify the StreamBuilder of the updated messages
+    _messagesController
+        .add(_messages); // Notify the StreamBuilder of the updated messages
     if (message.isNotEmpty) {
       socket.emit('sendMessage', {'message': message});
       _messageController.clear();
@@ -68,10 +69,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Socket.IO Chat'),
+        title: const Text('Socket.IO Chat'),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert),
             onPressed: () {
               // Add any additional actions here
             },
@@ -86,7 +87,8 @@ class _ChatScreenState extends State<ChatScreen> {
               initialData: _messages,
               builder: (context, snapshot) {
                 return ListView.builder(
-                  reverse: false,
+                  shrinkWrap: true,
+                  reverse: true,
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
                     return Padding(
@@ -98,10 +100,10 @@ class _ChatScreenState extends State<ChatScreen> {
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(8.0),
                           ),
-                          padding: EdgeInsets.all(10.0),
+                          padding: const EdgeInsets.all(10.0),
                           child: Text(
                             snapshot.data![index],
-                            style: TextStyle(color: Colors.white),
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ),
@@ -120,22 +122,22 @@ class _ChatScreenState extends State<ChatScreen> {
                     height: 60,
                     child: TextField(
                       controller: _messageController,
-                      decoration:const  InputDecoration(
+                      decoration: const InputDecoration(
                         fillColor: Color.fromARGB(255, 200, 217, 245),
                         filled: true,
                         hintText: 'Type a message...',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(20))
-                        ),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(20))),
                       ),
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.send),
+                  icon: const Icon(Icons.send),
                   onPressed: _sendMessage,
                 ),
-                IconButton(onPressed: (){}, icon: Icon(Icons.mic))
+                IconButton(onPressed: () {}, icon: const Icon(Icons.mic))
               ],
             ),
           ),
