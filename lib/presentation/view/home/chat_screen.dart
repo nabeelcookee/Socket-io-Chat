@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
@@ -10,49 +12,52 @@ class _ChatScreenState extends State<ChatScreen> {
   TextEditingController _messageController = TextEditingController();
   List<String> _messages = [];
   late IO.Socket socket;
+  late StreamController<List<String>> _messagesController;
 
   @override
   void initState() {
     super.initState();
 
-   
-    socket = IO.io('http://178.33.34.156:3500/', <String, dynamic>{
-  'transports': ['websocket'],
-  'autoConnect': false,
-});
+    _messagesController = StreamController<List<String>>.broadcast();
 
+    socket = IO.io('http://178.33.34.156:3500', <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+    });
 
     socket.on('connect', (_) {
-  print('Connected to server');
-});
+      print('Connected to server');
+    });
 
-socket.on('message', (data) {
-  print('Received message: $data');
-  setState(() {
-    _messages.add(data);
-  });
-});
+    socket.on('message', (data) {
+      print('Received message: $data');
+      _messages.add(data);
+      _messagesController.add(_messages); // Notify the StreamBuilder of the updated messages
+    });
 
-socket.on('disconnect', (_) {
-  print('Disconnected from server');
-});
+    socket.on('disconnect', (_) {
+      print('Disconnected from server');
+    });
 
-socket.on('error', (error) {
-  print('Error: $error');
-});
-
+    socket.on('error', (error) {
+      print('Error: $error');
+    });
 
     socket.connect();
   }
 
   @override
   void dispose() {
+    _messagesController.close();
     socket.disconnect();
     super.dispose();
   }
 
   void _sendMessage() {
     String message = _messageController.text.trim();
+    print('Sending message: $message'); // Add this line
+    _messages.add(message);
+    _messagesController.add(_messages); // Notify the StreamBuilder of the updated messages
     if (message.isNotEmpty) {
       socket.emit('sendMessage', {'message': message});
       _messageController.clear();
@@ -63,16 +68,45 @@ socket.on('error', (error) {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Socket.IO Chat'),
+        title: Text('Socket.IO Chat'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_vert),
+            onPressed: () {
+              // Add any additional actions here
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_messages[index]),
+            child: StreamBuilder<List<String>>(
+              stream: _messagesController.stream,
+              initialData: _messages,
+              builder: (context, snapshot) {
+                return ListView.builder(
+                  reverse: false,
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Align(
+                        alignment: Alignment.topRight,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          padding: EdgeInsets.all(10.0),
+                          child: Text(
+                            snapshot.data![index],
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -82,10 +116,18 @@ socket.on('error', (error) {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter your message...',
+                  child: SizedBox(
+                    height: 60,
+                    child: TextField(
+                      controller: _messageController,
+                      decoration:const  InputDecoration(
+                        fillColor: Color.fromARGB(255, 200, 217, 245),
+                        filled: true,
+                        hintText: 'Type a message...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(20))
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -93,6 +135,7 @@ socket.on('error', (error) {
                   icon: Icon(Icons.send),
                   onPressed: _sendMessage,
                 ),
+                IconButton(onPressed: (){}, icon: Icon(Icons.mic))
               ],
             ),
           ),
