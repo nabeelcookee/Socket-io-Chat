@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _ChatScreenState createState() => _ChatScreenState();
 }
 
@@ -26,23 +30,30 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     socket.on('connect', (_) {
-      print('Connected to server');
+      if (kDebugMode) {
+        print('Connected to server');
+      }
     });
 
     socket.on('message', (data) {
-      print('Received message: $data');
+      if (kDebugMode) {
+        print('Received message: $data');
+      }
       _messages.add(data);
       _messagesController.add(_messages);
     });
 
     socket.on('disconnect', (_) {
-      print('Disconnected from server');
+      if (kDebugMode) {
+        print('Disconnected from server');
+      }
     });
 
     socket.on('error', (error) {
-      print('Error: $error');
+      if (kDebugMode) {
+        print('Error: $error');
+      }
     });
-
     socket.connect();
   }
 
@@ -82,37 +93,36 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<String>>(
-              stream: _messagesController.stream,
-              initialData: _messages,
-              builder: (context, snapshot) {
-                return ListView.builder(
-                  shrinkWrap: true,
-                  reverse: true,
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Align(
-                        alignment: Alignment.topRight,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          padding: const EdgeInsets.all(10.0),
-                          child: Text(
-                            snapshot.data![index],
-                            style: const TextStyle(color: Colors.white),
-                          ),
+              child: StreamBuilder<List<String>>(
+            stream: _messagesController.stream,
+            initialData: _messages,
+            builder: (context, snapshot) {
+              return ListView.builder(
+                shrinkWrap: true,
+                reverse: true,
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        padding: const EdgeInsets.all(10.0),
+                        child: Text(
+                          snapshot.data![index],
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
+                    ),
+                  );
+                },
+              );
+            },
+          )),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
